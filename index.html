@@ -1,0 +1,472 @@
+﻿<!DOCTYPE html>
+<html>
+<!-- manifest="cache.manifest" -->
+<head>
+    <meta charset="utf-8" />
+    <title>文章按屏分页</title>
+    <meta name="keywords" content="" />
+    <meta name="description" content=""/>
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-tap-highlight" content="no" /> <!-- windows phone 点击无高光 -->
+    <!-- <meta name="apple-mobile-web-app-status-bar-style" content="black"> IOS顶栏变黑 -->
+    <!-- <link rel="apple-touch-icon" href="images/xxx.png" /> IOS高光图标 144x144  -->
+    <!-- <link rel="apple-touch-icon-precomposed" href="images/xxx.png" /> IOS无高光图标 144x144 -->
+    <style>
+    html{background:#fff;color:#000;font:12px/1.5 'microsoft yahei';
+        -webkit-tap-highlight-color:rgba(0,0,0,0);
+        tap-highlight-color:rgba(0,0,0,0);
+        -webkit-text-size-adjust:100%;
+        text-size-adjust:100%;
+    }
+
+    /*
+    Correct `block` display not defined in IE 8/9.
+    article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section{display:block;}
+    */
+    body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,code,figure,form,fieldset,legend,input,textarea,p,blockquote,th,td{margin:0;padding:0;}
+
+    h1,h2,h3,h4,h5,h6{font-size:100%;font-weight:normal;}
+    input,textarea,select,code,kbd,pre,samp {font-size:12px;}
+
+    /*
+    1. Avoid the WebKit bug in Android 4.0.* where (2) destroys native `audio`
+       and `video` controls.
+    2. Correct inability to style clickable `input` types in iOS.
+    3. Improve usability and consistency of cursor style between image-type
+       `input` and others.
+    */
+    button,
+    html input[type="button"], /* 1 */
+    input[type="reset"],
+    input[type="submit"] {
+        -webkit-appearance: button; /* 2 */
+        cursor: pointer; /* 3 */
+    }
+    /*
+    1. Address `appearance` set to `searchfield` in Safari 5 and Chrome.
+    2. Address `box-sizing` set to `border-box` in Safari 5 and Chrome
+       (include `-moz` to future-proof).
+    */
+    input[type="search"] {
+        -webkit-appearance: textfield; /* 1 */
+        -moz-box-sizing: content-box;
+        -webkit-box-sizing: content-box; /* 2 */
+        box-sizing: content-box;
+    }
+
+    input,textarea{outline:none;}
+    /*textarea{resize:none;}*/
+    /*input:focus, textarea:focus{outline:none;}*/
+    li{list-style:none;}
+    fieldset,img{border:none;}
+    a{text-decoration:none;/*outline:none;*/background:none;}
+    /*
+    Remove most spacing between table cells.
+    table{border-collapse:collapse;border-spacing:0}
+    */
+
+    /** global **/
+    a{color:#333;}
+
+    /** layout **/
+    </style>
+    <style>
+        .wrap{position:relative;overflow:hidden;}
+
+        #txtWrap{border:20px solid #ccc;border-radius:20px;font-size:20px;overflow:hidden;
+            display:-webkit-box;
+            -webkit-box-orient:vertical;
+        }
+        #txtArea{position:relative;overflow:hidden;
+            -webkit-column-gap:0;
+            -webkit-box-flex:1;
+        }
+        #txtArea p{text-indent:2em;word-wrap:break-word;margin-bottom:1.5em;}
+        .curMark{background:#333;color:#fff;}
+        #pageBar{height:40px;line-height:40px;background:#eee;text-align:center;}
+
+        #bookMark, #fnBar{position:absolute;left:0;width:100%;background:rgba(217,217,217,.9);font-size:20px;z-index:9;
+            box-shadow:0 0 5px 0 #666;
+            -webkit-transition:all 0.3s ease;
+            -moz-transition:all 0.3s ease;
+            -ms-transition:all 0.3s ease;
+            transition:all 0.3s ease;
+        }
+        #bookMark{top:0;border-radius:0 0 5px 5px;
+            -webkit-transform:translate3d(0,-200%,0);
+            -moz-transform:translate3d(0,-200%,0);
+            -ms-transform:translate3d(0,-200%,0);
+            transform:translate3d(0,-200%,0);
+        }
+        #bookMark li{position:relative;padding:0 1em;}
+        #curMarkInfo li:before{position:absolute;content:"";left:8px;top:10px;height:0;width:0;overflow:hidden;
+            border:solid transparent;border-width:5px 0 5px 5px;border-left-color:#333;
+        }
+        #fnBar{bottom:0;text-align:center;border-radius:5px 5px 0 0;
+            -webkit-transform:translate3d(0,200%,0);
+            -moz-transform:translate3d(0,200%,0);
+            -ms-transform:translate3d(0,200%,0);
+            transform:translate3d(0,200%,0);
+        }
+        .gotoPage input{-webkit-appearance:none;padding:0 4px;margin:0;border:none;
+            width:2em;height:20px;vertical-align:middle;
+        }
+        #readStatus{color:#333;}
+
+        .tips{width:100%;height:100%;position:absolute;top:0;left:0;background:rgba(0,0,0,.6);color:#fff;font-size:16px;text-align:center;}
+        .tips > div{position:absolute;}
+        .tips .arr{position:relative;display:block;border:solid #fff;border-width:1px 0 0 1px;width:15px;height:15px;font-size:15px;overflow:hidden;
+            margin:0 0 .5em;
+        }
+        .tips .arr:after{display:block;content:"";width:1.4em;height:1px;border-top:1px solid #fff;overflow:hidden;
+            -webkit-transform:rotate(45deg);
+            -moz-transform:rotate(45deg);
+            -ms-transform:rotate(45deg);
+            transform:rotate(45deg);
+            -webkit-transform-origin:0 0;
+        }
+
+        .tips .down{top:2.5em;left:50%;margin:0 0 0 -1em;}
+        .tips .down .arr{left:.5em;
+            -webkit-transform:rotate(-135deg);
+            -moz-transform:rotate(-135deg);
+            -ms-transform:rotate(-135deg);
+            transform:rotate(-135deg);
+        }
+        .tips .up{bottom:2.5em;left:50%;margin:0 0 0 -1em;}
+        .tips .up .arr{left:.5em;
+            -webkit-transform:rotate(45deg);
+            -moz-transform:rotate(45deg);
+            -ms-transform:rotate(45deg);
+            transform:rotate(45deg);
+        }
+        .tips .right{top:50%;left:2.5em;margin:-1.5em 0 0 0;}
+        .tips .right .arr{left:1em;
+            -webkit-transform:rotate(135deg);
+            -moz-transform:rotate(135deg);
+            -ms-transform:rotate(135deg);
+            transform:rotate(135deg);
+        }
+        .tips .left{top:50%;right:2.5em;margin:-1.5em 0 0 0;}
+        .tips .left .arr{left:1em;
+            -webkit-transform:rotate(-45deg);
+            -moz-transform:rotate(-45deg);
+            -ms-transform:rotate(-45deg);
+            transform:rotate(-45deg);
+        }
+        .tips .center{top:50%;left:50%;margin:-1em 0 0 -5em;}
+
+        .tips .close{background:#eee;color:#333;padding:.5em;right:.5em;top:.5em;width:2em;line-height:1;}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div id="txtWrap">
+        <div id="txtArea">&nbsp;&nbsp;&nbsp;&nbsp;雪山之巅，数道身影急速闪烁而过，好似天际的流星让人摸不清虚实，而那为首之人，却是一个穿着一身黑色西装，头发全无的年轻男子，长得很是俊秀，剑眉星眼，浓浓的睫毛下那一双眸子中却是泛出好似无比深邃的光晕，若有女人直面相对恐怕立时就会陷入其中，比现代社会上的那些明星都有过之而无不及……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;最引人注意的，是这年轻男子头顶上的一个戒疤，竟是散发着淡淡的毫光，宛如充满着佛性一样，这人是个和尚，准确点来说是一个花和尚，法号无天！<br><br>&nbsp;&nbsp;&nbsp;&nbsp;无天，原本只是藏地某个小古刹中的沙弥而已，然在无意间于古刹中寻得一本上古秘籍《欢喜禅诀》，乃西方欢喜佛修炼之根本。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;忍受不住《欢喜禅诀》的诱惑，最终耗费十数年时间中有小成，而后为了自身修为的提升初入社会，以俊朗的外表再加上身上那种对女人致命的吸引，引起了一场场社会上的波动，其‘邪佛’之称也在那个时候流传开来……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“无天，交出浮屠塔，本座保你无事！”身后一个狠厉的声音传出，说话此人身穿一袭深蓝色长袍，一头白发随着迅捷的脚步不断飘飞，但那眸子却显得很是阴鹜……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;此人乃华夏现代武林中仅存不多的邪道之人，号为冥王，其真实姓名早已被人忘却！<br><br>&nbsp;&nbsp;&nbsp;&nbsp;现代社会，虽然科技至上，然武林依旧存在，只是相比以往更加的缺失许多，而冥王手下之人众多，俱是杀人如麻之辈，冥王此人更是心狠手辣，但凡落在他手中之人无一能够幸免。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“花和尚，乖乖的交出浮屠塔，奴家也可以陪你几晚上哦……”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;这声音妩媚至极，好似听到耳里便有一种让人冲动之感，此人乃是一名女子，看似约莫三十来岁，身穿一袭红色衣裙，在这白雪皑皑的环境中好似一朵绽放的血色玫瑰，眼波流转中更是隐隐的泛出无限精芒……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;暗夜妖姬柳心媚，乃是与冥王同等级的高手，据说曾经乃是正道人士，可因为情殇而堕入邪道，而后以虐杀负心之人为乐。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;除了冥王与柳心媚之外，还有好几个邪道高手，俱是紧追着无天不放，而浮屠塔也成了他们此番追逐的主要目标！！<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“阿弥那个陀佛，和尚我的东西怎么能够交给你们？”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;无天没有停下脚步，只是转头朝身后的冥王与柳心媚开口道，“几位施主，你们与佛无缘，又何必前来强求？阿弥那个陀佛！”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“有缘无缘，难道是你这花和尚说了算的吗？”柳心媚妩媚笑道，“无天哥哥，快停下来让奴家休息休息吧，奴家好累哦……”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“阿弥那个陀佛，美人儿你累的话你就停下别追和尚我了，和尚我可是一个正常男人……”无天说道。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“废话那么多干什么？无天，快快交出浮屠塔，否则本座让你死无葬身之地！”冥王冷声喝道。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“哟喂，阿弥那个陀佛，冥王你可吓死和尚爷爷了！”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;无天做出一副惧怕的样子，摸着光头快速说道，“和尚爷爷还偏偏就不吃你那套！阿弥那个陀佛的草！”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;唰唰唰……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;就在这几人在不断对话之时，他们的速度却依旧没有任何变化，而最重要的是，无天的速度看似还要快上一筹，原本相差百多米的距离，如今却已然扩大了一些……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“邪佛，受死吧！”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;然而就在眼看着他们之间的距离越来越远之时，在前方陡然一道剑芒激射而来，好似天地之间都充斥着无边剑意一般……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“阿弥那个陀佛！”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;无天面色瞬变，身形骤停的刹那双手凝结出两道佛印，陡然将那道剑芒消泯于无形，前方数十米之外，赫然出现了数道身影，为首之人身穿一身青色长袍，一柄寒芒四溢的长剑持在手中，看来刚才的那道剑芒定是此人挥出无疑！<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“阿弥那个陀佛，吓死和尚爷爷我了！”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;停住脚步，无天拍了拍胸口，看着那青袍人不禁鄙视道，“堂堂青城派清虚掌门竟然暗中偷袭，还要不要脸了啊？”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“邪佛，无需多言！和你这种邪魔外道还需要讲那么多规矩么？今日，你必死无疑！”清虚冷冷的说道。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“哟喂，好大的口气！”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;无天不屑的撇嘴，“有本事你和和尚爷爷我单打独斗啊？我不就是和你门下的女弟子睡了几晚上么？”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“大胆！你还敢多言？今日，老夫就让你毙命在我这洞灵剑下！”清虚气得胡子都跳了起来。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“就凭你？”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;无天不屑的撇嘴，随即目光在清虚旁边的数个人影身上扫过，不禁故做吓了一跳的道，“哟喂！华山派，崆峒派，琼花宫，阿弥那个陀佛……怎么少林的本家和尚都来了？和尚爷爷不记得少林有美人儿啊？”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“阿弥陀佛，老衲只是前来助阵罢了！”一个老和尚双手合十，低眉说道。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“助阵？还不是为了和尚爷爷我手里的浮屠塔？”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;无天撇了撇嘴，“说的那么高尚！哼！”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“无天，老实点交出浮屠塔，否则定然让你死无葬身之地！”身后，追过来的冥王冷声喝道。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;周围，正道的诸多门派高手，再加上邪道的冥王和柳心媚众人，已然将无天所有前进或者后退的道路完全封锁，甚至在这雪山周围，连一点藏身的地方都没有……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;摸了摸自己的光头，无天邪笑道，“和尚我的确有浮屠塔，可如果我交出来是交给谁呢？清虚老贼，你说说看？”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“当然是交给我！”清虚手中的洞灵剑挽出一朵剑花，颇为理所当然的言道。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“放屁，是交给我们！”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;邪道中人纷纷叫嚣出声，清虚等正道之人也随即面色瞬变，说得好听是为了铲除邪佛无天这个邪魔外道，可实际上还不是为了那个上古至宝浮屠塔？<br><br>&nbsp;&nbsp;&nbsp;&nbsp;浮屠塔，是无天在约莫一月前侥幸于众人争斗中黄雀在后得到的一尊上古至宝，得到之后便直接来到了这雪山之巅藏起神来，可哪想到这些人竟然这么快的追了过来，甚至还是正邪两道一同抵达……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;最重要的一点，自从得到浮屠塔之后，这东西竟是直接进入到了他的体内，根本不知道该怎么办，只能内视的时候看到一尊小塔在丹田悬浮，任凭无天如何动作，这浮屠塔都没有任何反应……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“清虚老道，还有你们几个老贼毛……”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;冥王凝声说道，“今日我们联手先将这无天擒下，至于其他的以后再议，如何？”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“是啊，几位，冥王老大说的对哦……”柳心媚也在旁边媚笑着轻轻点头。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;清虚和十数个正道之人对望一眼，最后俱是暗自点点头算是同意了下来，而无天瞬间心里一咯噔，“阿弥那个陀佛，今天和尚爷爷就要交代在这里么？”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;看着那正邪两道之人开始联手，无天忽的出声喝道，“等等……我有个问题……”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“嗯？”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;众人停住不断逼近的脚步，冥王则冷哼道，“无天，有什么话快说！念在你就要死了的份儿上，本座成全你死前的心愿！”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“我想问问，你们怎么这么快就追了过来？”无天很不解的问道。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“哈哈，这还不简单么？你以为我们都真的是那些老古董？”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;冥王哈哈大笑道，“你坐飞机的时候便在机场的录像中留下了身影，而后我们在现代世俗中的弟子经过排查，自然而然的就确定了你的大概范围，哈哈……”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“阿弥那个陀佛，原来是这样，和尚我真是失算了……”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;无天苦笑不已，无奈的摇了摇头道，“好吧，现在和尚我已经问清楚了，你们谁来动手？”说话间，无天顿时表情肃然了起来，那看似单薄的身上也随即散发出淡淡的毫光，倒是颇有几分宝相庄严之感……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“这……”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;看到无天的样子，此刻周围众人反而是有些畏首畏尾起来……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;邪佛无天虽然成名不久，但已然进入现代武林中巅峰高手之列，比之清虚老道等人还要稍微强上几分。<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“大家一起上，费什么话？杀了你，才是最重要的！”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;冥王一声厉喝，数个邪道之人纷纷一拥而上，而那清虚老道等正派人士也微微犹豫了一下，随即害怕无天身上的浮屠塔被冥王等人抢去，对视一眼后也纷纷展开了他们各自的攻势……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;各种剑芒，各种攻势，在这雪山之巅尽数展开，宛如空间都好似要被割碎一般，让无天的表情无比凝重，他知道，这一次恐怕他真的是在劫难逃了！！<br><br>&nbsp;&nbsp;&nbsp;&nbsp;看着这些所谓正道的邪恶狰狞面容，他心里自嘲不已，这就是那些一向自诩为正道的人士！还不是为了一个搞不明白的浮屠塔暴露了隐藏的本性？<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“既然你们想要让和尚死，那和尚就和你们功归于尽！”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;无天深吸一口气，正要准备运功在周围之人围拢刹那自爆之时，哪想到丹田部位一直没有动作的浮屠塔却陡然急速旋转起来，不断地吸收着他全身真气以及周围那些空间能量……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“这是怎么回事？”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;吴天面色大骇，而周围已然临身的冥王等人也是神色巨变，他们感觉到了一种前所未有的威胁……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;咻咻……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;骤然之间，浮屠塔不受控制的从无天头顶百会穴直冲而出，刹那间彩光大盛，一种磅礴的能量瞬时将无天整个身体完全包裹，而那冥王等人也像是受到什么奇特的攻势，身体内的真气以及能量不断的流出，根本不受他们控制……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“天啊，我的真气……”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;“这怎么回事？啊……”<br><br>&nbsp;&nbsp;&nbsp;&nbsp;此刻不挂是正是邪，几乎所有人的真气都以极快的速度流向浮屠塔内，而冥王他们众人更是以极快的速度老化着，仅仅是在不到一分钟的时间，这些正邪众人便成了皮包骨的样子，眉须皆白再无任何之前的风貌……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;不知过去了多久，浮屠塔像是心满意足般停止了能量的吸收，而后陡然间光芒越发大盛，无数的佛光将无天身体完全笼罩，而后伴随着阵阵怪异的空间波动蔓延，无天的身形陡然随着浮屠塔瞬间消失不见……<br><br>&nbsp;&nbsp;&nbsp;&nbsp;除了那些变得无比老态的冥王众人外，整个雪山之巅就此恢复平静……</div>
+        <div id="pageBar">
+            <div id="pageNum"></div>
+        </div>
+    </div>
+    <div id="bookMark">
+        <ul id="curMarkInfo"></ul>
+        <div id="myMarkInfoWrap">
+            <ul id="myMarkInfo"></ul>
+        </div>
+    </div>
+    <div id="fnBar">
+        <div class="gotoPage"><label>跳到第 <input type="tel"> 页</label><button type="button">确定</button></div>
+        <div><a id="readStatus">夜间</a></div>
+    </div>
+    <div id="tips" class="tips">
+        <div class="close">关闭提示</div>
+        <div class="down"><i class="arr"></i> <span>下滑<br />书签</span></div>
+        <div class="left"><i class="arr"></i> <span>左滑<br />前一页</span></div>
+        <div class="up"><i class="arr"></i> <span>上滑<br />翻页</span></div>
+        <div class="right"><i class="arr"></i> <span>右滑<br />下一页</span></div>
+        <div class="center"><span>点击文字添加书签<br />点击文字区隐藏功能栏</span></div>
+    </div>
+</div>
+    <script>
+        var jsBaseLib = ('__proto__' in {} ? 'zepto' : 'jquery-v2');
+        document.write('<script src=js/' + jsBaseLib + '.js><' + decodeURI('/') +'script>');
+    </script>
+    <script src="js/common.js"></script>
+    <script>
+        (function(W, D){
+            var $txtWrap = $(D.getElementById('txtWrap')), $txtArea = $(D.getElementById('txtArea')),
+                pageBar = D.getElementById('pageBar'), pageNum = D.getElementById('pageNum'),
+                $bookMark = $('#bookMark'), $curMarkInfo = $('#curMarkInfo'), $myMarkInfo = $('#myMarkInfo'),
+                $fnBar = $('#fnBar'), $pageInput = $fnBar.find('input');
+
+            //初始化dom结构
+            var $txtArea_html = $txtArea.html();
+            //每段添加p
+            $txtArea_html = '<p>' + $txtArea_html.replace(/&nbsp;&nbsp;&nbsp;&nbsp;/g, '').replace(/<br><br>/g, '</p><p>') + '</p>';
+            var wordNum = 0;
+            $txtArea_html = $txtArea_html.replace(/<p>(.+?)<\/p>/g, function(string, match, index){
+                return string.replace(match, match.replace(/(.)/g, function(string, match, index){
+                    //每字添加span和id
+                    return '<span id="w' + wordNum++ + '">' + match + '</span>';
+                }));
+            });
+            var pNum = 0;
+            //给每个p添加id
+            $txtArea_html = $txtArea_html.replace(/<p/g, function(string, match, index){
+                return string + ' id="p' + pNum++ + '"';
+            });
+            $txtArea.html($txtArea_html);
+
+            var $txtArea_p = $txtArea.find('p'), $txtArea_p_len = $txtArea_p.length, total = 0, curPage = 0,
+                txtAreaW, txtAreaH, wordH = $txtArea_p[0].getElementsByTagName('span')[0].offsetHeight;
+
+            var bookMark = {
+                //将书签保存到localStorage
+                save: function(){
+                    var t = this, cur = t.cur, list = t.list, len = list.length, newList = [], item;
+                    for(var i = 0; i < len; ++i){
+                        item = list[i];
+                        newList.push([item[0], item[1], null, item[3]]);
+                    }
+                    localStorage.setItem('_bookMark', JSON.stringify({cur: [cur[0], cur[1], null, cur[3]], list: newList}));
+                },
+                /**
+                 * 设置书签
+                 * @param [el] 书签位置元素
+                 * @param [notAddNew] 不添加到书签
+                 */
+                set: function(el, notAddNew){
+                    var t = this, i = 0, list = t.list, item;
+                    t.cur[2] && t.cur[2].removeClass('curMark');
+                    if(el){ //设置选中元素为书签
+                        var mark = [+el.parentNode.id.substring(1), +el.id.substring(1), $(el)];
+                        t.cur = mark;
+                        if(notAddNew !== true){
+                            var len = list.length;
+                            for(i = 0; i < len; ++i){
+                                item = list[i];
+                                if(mark[0] === item[0] && mark[1] == item[1]){
+                                    list.splice(i, 1);
+                                    --i;
+                                    --len;
+                                }
+                            }
+                            list.push(t.cur);
+                        }
+                    }else{ //设置当前页的书签
+                        var curView = [curPage * txtAreaW, txtAreaH]; //现在显示的范围 [左边界，下边界]，相对父元素为#txtArea
+                        for(i = 0; i < $txtArea_p_len; ++i){
+                            item = $txtArea_p[i];
+                            if(item.offsetLeft >= curView[0]){ //取得大于左边界的第一个p
+                                if(item.offsetTop == 0 && item.offsetLeft === curView[0]){ //p相对#txtArea的top为0，left为左边界，即p刚好是当前显示范围的第一段
+                                    t.cur[0] = i; //设置当前段落
+                                    t.cur[2] = $(item.getElementsByTagName('span')[0]); //设置书签为当前段落的第一个字
+                                    t.cur[1] = +t.cur[2][0].id.substring(1); //设置当前书签
+                                } else { //p相对负元素的top不为0或left不为左边界，即p不为当前显示范围第一段，
+                                    --i; //以p的前一段作为当前段落
+                                    t.cur[0] = i; //设置当前段落
+                                    item = $txtArea_p[i];
+                                    var span_collect = item.getElementsByTagName('span'), span_collect_len = span_collect.length;
+                                    for(i = 0; i < span_collect_len; ++i){
+                                        item = span_collect[i];
+                                        if(item.offsetTop < wordH && item.offsetLeft >= curView[0]){ //获取相对#txtArea的top小于字高，left大于左边界的span，即段落在当前显示范围的第一个字
+                                            t.cur[2] = $(item); //设置书签为这个字
+                                            t.cur[1] = +item.id.substring(1); //设置当前书签
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    t.cur[2].addClass('curMark');
+                    //生成书签
+                    var temp = t.cur[2][0], str = '';
+                    //将书签的字+后最多5个字，作为书签提示信息
+                    for(i = 0; i < 5; ++i){
+                        str += temp.innerHTML;
+                        temp = temp.nextElementSibling;
+                        if(!temp){ break; }
+                    }
+                    t.cur[3] = str;
+                    //当前所在书签
+                    $curMarkInfo.html('<li data-w="w' + t.cur[1] + '">第' + (t.cur[0] + 1) + '段 ' + str + '</li>');
+                    //储存过的书签列表
+                    if(el){
+                        str = '';
+                        var myMarkInfoLen = list.length;
+                        for(i = 0; i < myMarkInfoLen; ++i){
+                            item = list[i];
+                            str = str + '<li data-index="' + i + '" data-w="w' + item[1] + '">第' + (item[0] + 1) + '段 ' + item[3] + '</li>';
+                        }
+                        $myMarkInfo.html(str);
+                    }
+                    t.save();
+                },
+                //跳到当前书签
+                goToCur: function(){
+                    var t = this;
+                    t.goToMark(t.cur[2][0]);
+                },
+                //跳到指定书签
+                goToMark: function(el){
+                    var t = this;
+                    curPage = el.offsetLeft/txtAreaW >> 0;
+                    $txtArea[0].scrollLeft = curPage * txtAreaW;
+                    pageNum.innerHTML = curPage + 1 + '/' + (total + 1);
+                    bookMark.set(el, true);
+                },
+                cur: [0, 0, $(D.getElementById('w0')), ''],
+                list: []
+            };
+            //W.bookMark = bookMark;
+
+            //页面布局重置
+            function setSize(){
+                var wW = W.innerWidth, wH = W.innerHeight;
+                txtAreaW = wW - 40;
+                txtAreaH = wH - 40;
+                $txtWrap.height(txtAreaH);
+                $txtArea.css('-webkit-columns', txtAreaW + 'px');
+                total = $txtArea[0].scrollWidth/txtAreaW - 1;
+                pageNum.innerHTML = curPage + 1 + '/' + (total + 1);
+            }
+            setSize();
+            W.addEventListener('resize', function(){
+                setSize();
+                bookMark.goToCur();
+            });
+
+            //页面初始时，将localStorage的书签信息，转化成实际书签信息
+            var localMarkInfo = localStorage.getItem('_bookMark');
+            if(localMarkInfo){
+                try{
+                    localMarkInfo = JSON.parse(localMarkInfo);
+                }catch (e){
+                    localMarkInfo = null;
+                }
+                if(localMarkInfo){ //有书签信息
+                    bookMark.cur = localMarkInfo.cur; //设置当前书签
+                    bookMark.list = localMarkInfo.list; //设置书签列表
+                    bookMark.goToMark($('#w' + bookMark.cur[1])[0]);
+                }
+            }else{ //没书签信息
+                localMarkInfo = null;
+                bookMark.set();
+            }
+
+            /**
+             * 跳页
+             * @param num 指定页，当有flip参数时为相对当前页跳转
+             * @param [flip] 是否翻页
+             */
+            function trunPage(num, flip){
+                var tarPage = num;
+                if(flip){
+                    tarPage = curPage + num;
+                }
+                if(tarPage > total){
+                    tarPage = total;
+                }
+                if(tarPage < 0){
+                    tarPage = 0;
+                }
+                curPage = tarPage;
+                $txtArea[0].scrollLeft = curPage * txtAreaW; //通过scrollLeft跳到指定的显示范围
+                pageNum.innerHTML = curPage + 1 + '/' + (total + 1);
+                $pageInput.val(curPage + 1);
+                bookMark.set();
+            }
+
+            var fnIsShow = false;
+            //文字区上下左右手势
+            APP.gesture({
+                $area: $txtWrap,
+                $tar: $txtArea,
+                direct: '4_direction',
+                upFn: function(e, direct, dX, dY){
+                    if(direct !== 'none'){
+                        switch(direct){
+                            case 'left':
+                            case 'right':
+                                //左右为翻页
+                                if(fnIsShow === false){
+                                    var flipNum = 0;
+                                    if(direct === 'left'){
+                                        flipNum = 1;
+                                    }else{
+                                        flipNum = -1;
+                                    }
+                                    trunPage(flipNum, true);
+                                }
+                                break;
+                            case 'up':
+                            case 'down':
+                                if(direct === 'up'){
+                                    //向上显示功能栏
+                                    $fnBar.css(APP.cssVendor + 'transform', 'translate3d(0,0,0)');
+                                    $bookMark.css(APP.cssVendor + 'transform', '');
+                                }else{
+                                    //向下显示书签栏
+                                    $fnBar.css(APP.cssVendor + 'transform', '');
+                                    $bookMark.css(APP.cssVendor + 'transform', 'translate3d(0,0,0)');
+                                }
+                                fnIsShow = true;
+                                break;
+                        }
+                    }
+                }
+            });
+
+            //书签栏左右删除当前书签
+            APP.gesture({
+                $area: $('#myMarkInfoWrap'),
+                $tar: $myMarkInfo,
+                direct: 'horizontal',
+                upFn: function(e, direct, dX, dY){
+                    if(direct !== 'none'){
+                        var $li = $(e.target).closest('li');
+                        bookMark.list.splice(+$li.attr('data-index'), 1);
+                        bookMark.set(bookMark.cur[2][0], true);
+                    }
+                }
+            });
+            //点击书签跳转
+            $myMarkInfo.on('click', 'li', function(e){
+                var markEL = D.getElementById(this.getAttribute('data-w'));
+                bookMark.goToMark(markEL);
+                $fnBar.css(APP.cssVendor + 'transform', '');
+                $bookMark.css(APP.cssVendor + 'transform', '');
+            });
+
+            $pageInput.val(curPage + 1);
+            //跳到指定页
+            $fnBar.find('button').on('click', function(e){
+                var page = $pageInput.val();
+                if(/^\d+$/.test(page)){
+                    trunPage(+page - 1);
+                }else{
+                    $pageInput.val(curPage);
+                }
+            });
+
+            //文字区点击事件
+            $txtArea.on('click', function(e){
+                if(fnIsShow === true){ //有书签或功能栏时，点击隐藏
+                    $fnBar.css(APP.cssVendor + 'transform', '');
+                    $bookMark.css(APP.cssVendor + 'transform', '');
+                    fnIsShow = false;
+                }else{ //没书签或功能栏时，点击字设置书签
+                    var $span = $(e.target).closest('span');
+                    if($span.length && !$span.hasClass('curMark')){ bookMark.set($span[0]); }
+                }
+            });
+
+            $('#tips').click(function(){ $(this).remove(); })
+        })(window, document);
+    </script>
+</body>
+</html>
